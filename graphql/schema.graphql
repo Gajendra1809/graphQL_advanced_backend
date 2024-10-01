@@ -1,0 +1,3 @@
+#import user.graphql
+#import category.graphql
+#import product.graphql

@@ -1,0 +1,37 @@
+"A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
+scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
+
+extend type Query {
+    categories: [Category!]! @all @softDeletes @guard(with: ["api"])
+    category(uuid: String! @eq): Category! @find @guard(with: ["api"])
+}
+
+extend type Mutation {
+    createCategory(input: CreateCategoryInput! @spread): Category! @create @guard(with: ["api"]) @can(ability: "createUpdateDelete")
+    updateCategory(input: UpdateCategoryInput! @spread): Category! @update @guard(with: ["api"]) @can(ability: "createUpdateDelete")
+    deleteCategory(input: DeleteCategoryInput! @whereKey): Category @delete @guard(with: ["api"]) @can(ability: "createUpdateDelete")
+}
+
+type Category {
+    id: ID!
+    uuid: String!
+    category_name: String!
+    products: [Product!]! @belongsToMany(relation: "products", through: "category_product")
+    products_count: Int! @productCount
+    created_at: DateTime!
+    updated_at: DateTime!   
+    deleted_at: DateTime 
+}
+
+input CreateCategoryInput @validator {
+    category_name: String!
+}
+
+input UpdateCategoryInput @validator {
+    uuid: String! @UuidResolve(model: "App\\Models\\Category") @rename(attribute: "id")
+    category_name: String
+}
+
+input DeleteCategoryInput {
+    uuid: String! @UuidResolve(model: "App\\Models\\Category") @rename(attribute: "id")
+}

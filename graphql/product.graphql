@@ -1,0 +1,54 @@
+"A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
+scalar DateTime @scalar(class: "Nuwave\\Lighthouse\\Schema\\Types\\Scalars\\DateTime")
+
+extend type Query {
+    products: [Product!]! @all @softDeletes @guard(with: ["api"])
+    activeProducts: [Product!]! @all @where(key: "status", operator: "=", value: "1") @guard(with: ["api"])
+    product(uuid: String! @eq): Product! @find @guard(with: ["api"])
+}
+
+extend type Mutation {
+    createProduct(input: CreateProductInput! @spread): Product! @create @guard(with: ["api"]) @can(ability: "createUpdateDelete")
+    updateProduct(input: UpdateProductInput! @spread): Product! @update @guard(with: ["api"]) @can(ability: "createUpdateDelete")
+    deleteProduct(input: DeleteProductInput! @whereKey): Product! @delete @guard(with: ["api"]) @can(ability: "createUpdateDelete")
+}
+
+type Product {
+    id: ID!
+    uuid: String!
+    product_name: String!
+    status: ProductStatusEnum
+    product_added_by: User @belongsTo(relation: "user")
+    categories: [Category!]! @belongsToMany(relation: "categories", through: "category_product")
+    created_at: DateTime!
+    updated_at: DateTime!
+    deleted_at: DateTime
+}
+
+input CreateProductInput {
+    product_name: String! @rules(apply: [ "string", "min:3", "max:255"])
+    status: ProductStatusEnum! @rules(apply: [ "in:0,1"])
+    categories: CategoryBelongsToMany
+}
+
+input UpdateProductInput {
+    uuid: String! @UuidResolve(model: "App\\Models\\Product") @rename(attribute: "id")
+    product_name: String @rules(apply: [ "string", "min:3", "max:255"])
+    status: ProductStatusEnum @rules(apply: [ "in:0,1"])
+    categories: CategoryBelongsToMany
+}
+
+input DeleteProductInput {
+    uuid: String! @UuidResolve(model: "App\\Models\\Product") @rename(attribute: "id")
+}
+
+input CategoryBelongsToMany {
+    connect: [ID!] @rules(apply: [ "exists:categories,id"])
+    sync: [ID!] @rules(apply: [ "exists:categories,id"])   
+    disconnect: [ID!] @rules(apply: [ "exists:categories,id"])
+}
+
+enum ProductStatusEnum {
+    Active @enum(value: "1")
+    Inactive @enum(value: "0")
+}
